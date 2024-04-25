@@ -1,0 +1,30 @@
+server
+	listen 127.0.0.1:800
+	server_name server1 
+	error_page 404 /error/404.html
+	client_max_body_size 10000
+	location /
+		allow GET 
+		root /var/www
+		autoindex on
+		index index.html 
+	location /cgi-bin
+		root /var/www
+		upload /var/www
+server
+	listen 127.0.0.1:80 
+	server_name server2
+	error_page 404 /error/404.html
+	error_page 405 /error/405.html
+	location /HOME
+		allow POST 
+		index index.html home.html sila.html
+		root /var/www
+server
+	listen 127.0.0.1:80 
+	server_name server3
+	error_page 404 /error/404.html
+	location /APPLY
+		index index.html apply.html
+		autoindex on
+		return /
