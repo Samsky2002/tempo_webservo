@@ -12,6 +12,7 @@ class Http
 		Multiplex multiplex;
 		Parser parser;
 		std::string config_file;
+		
 		Http();
 		Http( const Http & http );
 		Http & operator=( const Http & http );

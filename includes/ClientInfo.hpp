@@ -1,5 +1,6 @@
 #ifndef CLIENTINFO_HPP
 # define CLIENTINFO_HPP
+
 # include "Request.hpp"
 # include "Response.hpp"
 # include "ServerConfig.hpp"

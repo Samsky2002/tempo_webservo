@@ -1,34 +1,47 @@
-#ifndef MULTIPLEX_HPP
-# define MULTIPLEX_HPP
-# include "Request.hpp"
-# include "Response.hpp"
-# include "Client.hpp"
+# ifndef Multiplex_HPP
+# define Multiplex_HPP
 
-class Multiplex
+#include "webserv.hpp"
+#include "Client.hpp"
+
+class	Multiplex
 {
-	public:
-		Client client;
-		int nfds;
-		int newfd;
-		int rec;
-		int sen;
-		char recv_buffer[1024];
-		std::vector<char> buffer;
-		std::string send_buffer;
-		std::string req;
-		fd_set readfds;
-		fd_set writefds;
-		fd_set tmp_readfds;
-		fd_set tmp_writefds;
-		std::vector<int> socket_list;
-		Multiplex();
+	private:
+		//General Elements;
+		int 						quit;
+		Client						client;
+	 
+		//Elements For Kevents;
+		int 						kq;
+		struct timespec 			timeout;
+		struct kevent				Changeevent;
+
+		//Method
+		Multiplex &operator=( const Multiplex & multiplex );
 		Multiplex( const Multiplex & multiplex );
-		Multiplex & operator=( const Multiplex & multiplex );
+
+		void	receiving( int &i );
+		void	sendig(int &fd );
+		void	accepting( int &fdServer, const Server &server ); 
+		void	delete_client( int client);
+		bool	is_socket( const std::vector< ServerInfo > & serverInfo, int socket );
+
+	public:
+		Multiplex();
 		~Multiplex();
-		void execute( const Server & server );
-		void setup( const std::vector< ServerInfo > & serverInfo );
-		void multiplexing( const Server & server );
-		bool is_socket( const std::vector< ServerInfo > & serverInfo, int socket );
+		
+		void	execute( const Server & server );
+		void	setup( const std::vector< ServerInfo > & serverInfo );
+		void	multiplexing( const Server & server );
+	
+		class KQUEUE_EXCEPTION : public std::exception
+		{
+			const char *what() const _NOEXCEPT;
+		};
+		class KEVENT_EXCEPTION : public std::exception
+		{
+			const char *what() const _NOEXCEPT;
+		};
 };
 
 #endif

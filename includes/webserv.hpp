@@ -14,6 +14,7 @@
 # include <sstream>
 # include <sstream>
 # include <dirent.h>
+# include <sys/event.h>
 
 # include "Http.hpp"
 # include "Server.hpp"
