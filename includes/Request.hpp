@@ -1,64 +1,79 @@
-#ifndef REQUEST_HPP
-# define REQUEST_HPP
-# include <vector>
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Request.hpp                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ndahib <ndahib@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/03/17 09:28:30 by ndahib            #+#    #+#             */
+/*   Updated: 2024/04/28 12:44:05 by ndahib           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-class Request
+# ifndef REQUEST_HPP
+# define REQUEST_HPP 
+
+#include "webserv.hpp"
+
+#define MAX_SIZE_LENGHT 254
+
+class	Request
 {
+	/* ***********************************Methods************************ */		
 	public:
-		int statusCode;
-		std::string method;
-		std::string path;
-		std::string protocol;
-		std::vector<std::pair<std::string, std::string> > header;
-		std::vector<char> body;
-		std::vector<std::string> lines;	
-		int index;
-		std::string rem;
-		bool inBody;
-		std::vector<char> buffer;
-		size_t contentLength;
 		Request();
-		Request( const Request & request );
-		Request & operator=( const Request & request );
+		Request(const Request &obj);
+		Request &operator=(const Request &obj);
 		~Request();
-		// header-begin
-		bool isUpperCaseLetters( const std::string & str );
-		void handleMethod( const std::string & str );
-		void handlePath( const std::string & str );
-		void handleProtocol( const std::string & str );
-		void handleRequestLine();
-		std::string getKey( const std::string & str );
-		std::string getValue( const std::string & str );
-		void handleHeaders();
-		void checkHeaderInfo();
-		void isEnd();
-		void parse();
-		void headerFill();
-		// header-end
-		// body-begin
-		void bodyFill();
-		void setup( std::vector<char> & newBuffer );
-		std::string getHeader( const std::string & key ) const;
-		bool headerExist( const std::string & key ) const;
-		void handleContentLength();
-		// body-end
-		// chunk-start
-		int hexadecimalToDecimal(const std::string& hexadecimalString);
-		void checkChunked();
-		void parseChunked();
-		void handleChunked();
-		int chunkIndex;
+	
+	private:
+		void	split_request();
+		void	parse_request();
+		void	parse_request_line();
+		bool	HostAlreadyExist();
+		void	parse_headers();
+		void	parse_body();
+		void	parse_path();
+		void 	checkChunked();
+		void 	handleChunked();
+		void	print();
+	
+	public:
+		void				clear();
+		void				setup( std::vector<char> & newBuffer );
+		bool				headerExist( const std::string & key ) const;
+		std::string const	getHeader( const std::string & key ) const;
+
+	/* *******************************Attributes************************ */
+	private:
+		// General Elements;
+		std::vector<char> 			buffer;
+		std::vector<std::string>	TmpHeaders;
+
+		// For Chunked
+		size_t						chunkLength;
+		std::string					chunkBuffer;
 		std::pair<std::string, std::string> chunkPair;
-		std::string chunkBuffer;
-		size_t chunkLength;
-		// chunk-end
-		// tmp
-		void clear();
-		void print();
+		
+	public:
+		int							statusCode;
+		// http Request have 3 component:
+			//1- Request Line : that contain Mthod Path and HTTP version;
+		std::string			path;
+		std::string			method;
+		std::string			protocol;
+		std::string			requestLine;
+			//1.1 Components  of Path
+		std::string			fragement;
+		std::string			Finalpath;
+		std::map<std::string, std::string>  query;
+		
+			//2- Headres 
+		std::vector<std::pair<std::string, std::string> >	header;
+		
+			//3- Message Body
+		std::vector<char>			body;
+		std::vector<char>			Finalbody;
 };
 
-// path_info
-// query_string
-// 
-
-#endif
+# endif /*REQUEST_HPP*/

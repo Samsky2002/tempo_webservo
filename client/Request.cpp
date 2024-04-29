@@ -1,60 +1,72 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Request.cpp                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ndahib <ndahib@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/03/19 08:07:29 by ndahib            #+#    #+#             */
+/*   Updated: 2024/04/29 10:01:01 by ndahib           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "webserv.hpp"
 
-Request::Request()
+/* ************************************************************************** */
+/*               ORTHODOX_CANONICAL_FORM                                      */
+/* ************************************************************************** */
+
+Request::Request() : statusCode(0)
 {
-	statusCode = 0;
-	index = 0;
-	chunkIndex = 0;
-	inBody = false;
+	// Default Constructor;
 }
 
-Request::Request( const Request & request )
+Request::Request(const Request &obj)
 {
-	*this = request;
+	(void)obj;
 }
 
-Request & Request::operator=( const Request & request )
+Request &Request::operator=(const Request &obj)
 {
-	if ( this != &request )
+	if (this != &obj)
 	{
-		//std::cout << "copy assignment request\n";
-		this->statusCode = request.statusCode;
-		this->method = request.method;
-		this->path = request.path;
-		this->protocol = request.protocol;
-		this->header = request.header;
-		this->body = request.body;
-		this->lines = request.lines;
-		this->index = request.index;
-		this->rem = request.rem;
-		this->inBody = request.inBody;
-		this->buffer = request.buffer;
+		statusCode = obj.statusCode;
+		buffer = obj.buffer;		
+		path = obj.path;
+		method = obj.method;
+		protocol = obj.protocol;
+		requestLine = obj.requestLine;
+		fragement = obj.fragement;
+		query = obj.query;
+		path = obj.path;
+		body = obj.body;
 	}
-	return ( *this );
+	return (*this);
 }
 
-Request::~Request()
-{
+Request::~Request(){}
 
-}
+/* ************************************************************************** */
+/*               Outils                                   		  			  */
+/* ************************************************************************** */
 
-// i need to check if it reached the end
-// when the header is finished i need to parse and see if the necessary is there
-bool Request::isUpperCaseLetters( const std::string & str )
+void	toLower(std::string &key)
 {
-	for ( size_t i = 0; i < str.length(); i++ )
+	for (size_t i = 0; i < key.size(); i++)
 	{
-		if ( !std::isupper( str.at( i ) ) || !std::isalpha( str.at( i ) ) )
-			return ( false );
+		if (std::isdigit(key[i]))
+			throw (400);
+		if ((key[i] != '-' && !std::isalpha(key[i])))
+			throw(400);
+		key[i] = std::tolower(key[i]);
 	}
-	return ( true );
 }
 
 std::vector<std::string> split( const std::string str )
 {
-	std::stringstream ss;
-	std::string tmp;
-	std::vector<std::string> result;
+	std::stringstream			ss;
+	std::string					tmp;
+	std::vector<std::string>	result;
 
 	ss << str;
 	while ( ss >> tmp )
@@ -64,239 +76,192 @@ std::vector<std::string> split( const std::string str )
 	return ( result );
 }
 
-void Request::handleMethod( const std::string & str )
+int ConvertHex(const std::string& path) 
 {
-	if ( !isUpperCaseLetters( str ) )
+	int len = path.size();
+	int base = 1;
+	int dec_val = 0;
+	for (int i = len - 1; i >= 0; i--) 
 	{
-		std::cerr << "not upper and letter\n";
-		throw ( 400 );
-	}
-	method = str;
-}
-
-void Request::handlePath( const std::string & str )
-{
-	if ( str.at( 0 ) != '/' )
-	{
-		std::cerr << "path not starting with /\n";
-		throw ( 400 );
-	}
-	path = str;
-}
-
-void Request::handleProtocol( const std::string & str )
-{
-	if ( str != "HTTP/1.1" )
-		throw ( 505 );
-	protocol = str;
-}
-
-// to be improved
-void Request::handleRequestLine()
-{
-	std::vector<std::string> result;
-
-	if ( index != 0 || lines[ index ] == "\r\n" )
-		return ;
-	result = split( lines[ index ] );
-	if ( result.size() < 3 )
-	{
-		std::cerr << "less than requestline\n";
-		throw ( 400 );
-	}
-	handleMethod( result[ 0 ] );
-	handlePath( result [ 1 ] );
-	handleProtocol( result[ 2 ] );
-	if ( result.size() != 3 )
-	{
-		std::cerr << "more than requestline\n";
-		throw ( 400 );
-	}
-}
-
-std::string Request::getKey( const std::string & str )
-{
-	std::string key;
-	std::size_t pos;
-
-	pos = str.find( ":" );
-	if ( pos != std::string::npos )
-	{
-		key = str.substr(0, pos);
-	}
-	else
-	{
-		key = str;
-	}
-	std::transform( key.begin(), key.end(), key.begin(), ::tolower );
-	return ( key );
-}
-
-std::string Request::getValue( const std::string & str )
-{
-	std::string value;
-	std::size_t pos;
-
-	pos = str.find( ":" );
-	if ( pos != std::string::npos )
-		value = str.substr(pos + 1);
-	//std::transform( value.begin(), value.end(), value.begin(), ::tolower );
-	return ( value );
-}
-
-void Request::handleHeaders()
-{
-	if ( index == 0 || lines[ index ] == "\r\n" )
-		return ;
-	header.push_back( std::make_pair( getKey( lines[ index ] ), getValue( lines[ index ] ) ) );
-}
-
-std::string Request::getHeader( const std::string & key ) const
-{
-	for ( size_t i = 0; i < header.size(); i++ )
-	{
-		if ( header[ i ].first == key )
+		if (path[i] >= '0' && path[i] <= '9')
 		{
-			return ( header[ i ].second.c_str() );
+			dec_val += (int(path[i]) - 48) * base;
+			base = base * 16;
+		} else if (path[i] >= 'A' && path[i] <= 'F')
+		{
+			dec_val += (int(path[i]) - 55) * base;
+			base = base * 16;
+		}else if (path[i] >= 'a' && path[i] <= 'f')
+		{
+			dec_val += (int(path[i]) - 87) * base;
+			base = base * 16;
 		}
 	}
-	return ( std::string() );
+	return (dec_val);
 }
+
+char	HexToChar(const std::string& path)
+{
+	return ((char)( ConvertHex(path) ));
+}
+
+
+/* ************************************************************************** */
+/*               Methods                                     				  */
+/* ************************************************************************** */
+
+void Request::clear()
+{
+	std::cout << "clear\n";
+	statusCode = 0;
+	method.clear();	
+	path.clear();
+	protocol.clear();
+	header.clear();
+	body.clear();
+	requestLine.clear();
+	buffer.clear();
+	fragement.clear();
+	Finalpath.clear();
+	query.clear();
+	body.clear();
+	Finalbody.clear();
+	buffer.clear();
+	TmpHeaders.clear();
+	chunkBuffer.clear();
+}
+
+void	Request::split_request()
+{
+	size_t pos = 0;
+	std::string line;
+	
+	// Parse request line
+	while (pos < buffer.size() && buffer[pos] != '\r' && buffer[pos + 1] != '\n') 
+	{
+		requestLine += buffer[pos];
+		++pos;
+	}
+	pos += 2;
+
+	// Parse headers
+	while (pos < buffer.size()) 
+	{
+		while (buffer[pos] != '\r')
+		{
+			line += buffer[pos];
+			pos++;
+		}
+		TmpHeaders.push_back(line);
+		line.clear();
+		if (std::string(buffer.begin() + pos, buffer.begin() + pos + 4) == "\r\n\r\n")
+			break;
+		pos += 2;
+	}
+	pos += 2;
+
+	// Copy the body
+	while (pos < buffer.size()) 
+	{
+		body.push_back(buffer[pos]);
+		++pos;
+	}
+}
+
+void	Request::print()
+{
+	std::cout << " ****************************Request Line***********************************" << std::endl;
+	std::cout << "Request Line->:" << requestLine << std::endl;
+	std::cout << "Method-->		:" << method << std::endl;
+	std::cout << "Path---->		:" << path << std::endl;
+	std::cout << "Prinintg the query if Exist---->>:" << std::endl;
+	for(std::map<std::string, std::string>::iterator it = query.begin();
+		it != query.end(); ++it)
+	{
+		std::cout << it->first << "=" << it->second << "\n";
+	}  
+	std::cout << "Fragement---->:" << fragement << std::endl;
+	std::cout << "Protocol->	:" << protocol << std::endl;
+	std::cout << " ******************************Headre*************************************" << std::endl;
+	for (size_t i = 0; i < header.size(); i++)
+	{
+		std::cout << "===key :[" << header[i].first << "] = " << header[i].second << std::endl; 
+	}
+	std::cout << " ********************************Body**************************************" << std::endl;
+	for (size_t i = 0; i < body.size(); i++)
+	{
+		std::cout << body[i];
+	}
+}
+
 
 bool Request::headerExist( const std::string & key ) const
 {
-	for ( size_t i = 0; i < header.size(); i++ )
+	for (size_t i = 0; i < header.size(); i++)
 	{
-		if ( header[ i ].first == key )
-		{
-			return ( true );
-		}
+		if (header[i].first == key)
+			return (true);	
 	}
-	return ( false );
+	return (false);
 }
 
-void Request::isEnd()
+std::string const Request::getHeader(const std::string & key ) const
 {
-	if ( lines[ index ] == "\r\n" )
+	for (size_t i = 0; i < header.size(); i++)
 	{
-		if ( index != 0 && lines[ index - 1] != "\r\n" )
-		{
-			checkHeaderInfo();
-			if ( method != "POST" )	
-				throw ( 200 );
-			buffer.erase( buffer.begin() );
-			contentLength = std::atoi( getHeader( "content-length" ).c_str() );
-			inBody = true;
-		}
+		if (header[i].first == key)
+			return (header[i].second);	
 	}
+	return ("");
 }
 
-void Request::parse()
+bool	Request::HostAlreadyExist()
 {
-	handleRequestLine();
-	handleHeaders();
-	isEnd();
-}
-
-// i need to store all the headers in lower_case
-// maybe add a host variable because it's gonna make it easy for me in response
-// there is a problem with str
-void Request::headerFill()
-{
-	std::string line;
-	std::size_t pos;
-
-	if ( inBody )
-		return ;
-	if ( !rem.empty() )
+	for (size_t i = 0; i < header.size(); i++)
 	{
-		line = rem;
-		rem.clear();
+		if (header[i].first == "host")
+			return (true);
 	}
-	while ( !buffer.empty() )
-	{
-		line += buffer[ 0 ];
-		pos = line.find( "\r\n" );
-		if ( pos != std::string::npos )
-		{
-			lines.push_back( line );
-			parse();
-			index++;
-			line.clear();
-			if ( inBody )
-				return ;
-		}
-		buffer.erase( buffer.begin() );
-	}
-	if ( !line.empty() )
-	{
-		rem = line;
-	}
+	return (false);
 }
-
-void printVecy( std::vector<char> & vec )
-{
-	for ( size_t i = 0; i < vec.size(); i++ )
-	{
-		std::cout << vec[i];
-	}
-}
-
-void Request::handleContentLength()
-{
-	if ( !headerExist( "content-length" ) )
-		return ;
-	body.insert( body.end(), buffer.begin(), buffer.end() );
-	if ( body.size() > contentLength )
-	{
-		std::cerr << "body content comparaison\n";
-		throw ( 400 );
-	}
-	else if ( body.size() == contentLength )
-		throw ( 200 );
-}
-
-int Request::hexadecimalToDecimal(const std::string& hexadecimalString) 
-{
-	std::stringstream ss;
-    ss << std::hex << hexadecimalString;
-
-    int decimalValue;
-    ss >> decimalValue;
-
-    if (ss.fail() || !ss.eof()) {
-		std::cerr << "invalid chunk length\n";
-        throw ( 400 );
-    }
-    return decimalValue;
-}
-
 void Request::checkChunked()
 {
 	if ( chunkLength != chunkPair.second.length() )
 		throw ( 400 );
 	if ( chunkLength == 0 )
+	{
+		Finalbody.insert( Finalbody.end(), chunkPair.second.begin() ,chunkPair.second.end() ) ;
 		throw ( 200 );
-	body.insert( body.end(), chunkPair.second.begin() ,chunkPair.second.end() ) ;
+	}
 }
 
-void Request::parseChunked()
+void print_buffer(std::vector<char> body)
 {
-	std::cout << "handling chunked\n";
-	for ( size_t i = 0; i < buffer.size(); i++ )
+	for ( size_t i = 0; i < body.size(); i++ )
+		std::cout << body[i];
+}
+
+void	Request::handleChunked()
+{
+	int chunkIndex = 0;
+	for ( size_t i = 0; i < body.size(); i++ )
 	{
-		chunkBuffer += buffer.at( i );
+		chunkBuffer += body[i];
 		if ( chunkBuffer.find( "\r\n" ) != std::string::npos )
 		{
-			chunkBuffer.erase( chunkBuffer.size() - 2 );
+			chunkBuffer.pop_back();
+			chunkBuffer.pop_back();
 			if ( chunkIndex == 0 )
 			{
+				if (chunkBuffer.empty() == true)
+					continue;
 				chunkPair.first = chunkBuffer;
-				chunkLength = hexadecimalToDecimal( chunkPair.first );
+				chunkLength = ConvertHex( chunkPair.first );
 				chunkIndex++;
 			}
 			else
 			{
+			
 				chunkPair.second = chunkBuffer;
 				chunkIndex++;
 			}
@@ -310,99 +275,154 @@ void Request::parseChunked()
 			chunkBuffer.clear();
 		}
 	}
+	body.clear();
+	body = Finalbody;
 }
 
-// if chunklength = 0 , end of chunked
-// if the chunk is more than the chunk length throw bad request
-// chunk is in hexa and if the hexa is wrong it's bad request
+/* ************************************************************************** */
+/*					Parsing Methods											  */
+/* ************************************************************************** */
 
-void Request::handleChunked()
+void	Request::parse_path()
 {
-	if ( !headerExist( "transfer-encoding" ) )
-		return ;
-	parseChunked();
-	//printVecy( buffer );
+	//decoding path
+	size_t found;
+	while  ((found = path.find('%')) != std::string::npos)
+	{
+		path.replace(found, 3, 1, HexToChar(path.substr(found + 1, 2)));
+	}
+	std::stringstream	ss(path);	
+
+	// Splitting Path
+	getline(ss, Finalpath, '?');
+	std::string part;
+	size_t	del;
+	size_t	fragement_found;
+	while (std::getline(ss, part, '?') && part.empty() == false) 
+	{
+		fragement_found = part.find( '#' );
+		if ((del = part.find( '=' )) == std::string::npos)
+		{
+			throw(400);
+		}
+		query[part.substr(0, del)] = part.substr(del + 1, part.size() - fragement_found + 1);
+		if (fragement_found != std::string::npos)
+		{
+			//fragement exit;
+			fragement = part.substr(fragement_found + 1);
+			break;
+		}
+	}
+	if (path.size() > MAX_SIZE_LENGHT)
+		throw(414);
+	path = Finalpath;
 }
 
-void Request::bodyFill()
+void	Request::parse_request_line()
 {
-	if ( !inBody )
-		return ;
-	handleContentLength();
-	handleChunked();
+	std::vector< std::string> token = split(requestLine);
+
+	if (token.empty() || token[1][0] !=  '/' )
+	{
+		throw (400); // Bad Request - Empty Request Line
+	}
+	if (token.size() < 3 )
+		throw (404);
+	if (token[0] == "GET")
+		method = "GET";
+	else if (token[0] == "POST")
+		method = "POST";
+	else if (token[0] == "DELETE")
+		method = "DELETE";
+	else throw(501); 	// NOn Standard Methods 501 NOT IMplemeted 
+	
+	// Passing to the Syntax;
+	if (token[2] != "HTTP/1.1")
+		throw(505);   // Unsupported version , 505 HTTP Version Not Supported).
+	path = token[1];
+	protocol = token[2];
+	parse_path();
 }
-// check if content length or chunked
+
+void	Request::parse_headers()
+{
+	std::string	key;
+	std::string	value;
+	size_t	found_del;
+	
+	std::map<std::string, std::string>	Headers;
+	for (size_t i = 0; i < TmpHeaders.size(); i++)
+	{
+		if ((found_del = TmpHeaders[i].find(':' )) == std::string::npos)
+		{
+			throw(400);
+		}
+		key = TmpHeaders[i].substr(0, found_del);
+		value = TmpHeaders[i].substr(found_del + 2, TmpHeaders[i].size() - 3);
+		
+		toLower(key);
+		if (key == "host" && HostAlreadyExist() == true)
+		{
+			throw(400);
+		}
+		Headers[key] = value;
+		header.push_back(std::make_pair(key, value));
+	}
+	if (method == "GET" && headerExist("host") == false)
+		throw(404);
+}
+
+void	Request::parse_body()
+{
+	if (headerExist("centent-lenght") == true && headerExist("transfer-encoding") == true)
+		throw(400);
+	if (body.empty() == false)
+	{
+		if (headerExist( "content-lenght" ))
+		{
+			if (std::atoi(getHeader("content-lenght").c_str()) != (int)body.size())
+				throw(400);
+			else
+				throw(200);
+		}
+		else if (headerExist( "transfer-encoding" ))
+		{
+			handleChunked();
+		}
+		else if (strncmp(body.data(), "\r\n", body.size()) != 0)
+		{
+			// Compare if the body just CLRF
+			throw(411);
+		}
+		else
+			throw(200);
+	}
+}
+
+void	Request::parse_request()
+{
+	parse_request_line();
+	parse_headers();
+	parse_body();
+}
+
+/* ************************************************************************** */
+/*				Setup											  			  */
+/* ************************************************************************** */
 
 void Request::setup( std::vector<char> & newBuffer )
 {
 	buffer = newBuffer;
-	try {
-		//printVecy( buffer );
-		headerFill();
-		bodyFill();
-	}
-	catch ( int & e )
+	try
 	{
-		// set env variables
+		split_request();
+		parse_request();
+	}
+	catch(const int &e)
+	{
 		print();
+		std::cout << "The Request exit wiht " << e << std::endl;
 		statusCode = e;
-		std::cout << e << std::endl;
-		throw( e );
-	};
-}
-
-void Request::print()
-{
-	std::cout << "method: " << method << std::endl;
-	std::cout << "path: " << path << std::endl;
-	std::cout << "protocol: " << protocol << std::endl;
-	for ( size_t i = 0; i < header.size(); i++ )	
-	{
-		std::cout << "header: " << header[i].first << ":" << header[i].second;
-	}
-	//printVecy( body );
-}
-
-void Request::clear()
-{
-	std::cout << "clear\n";
-	statusCode = 0;
-	method.clear();	
-	path.clear();
-	protocol.clear();
-	header.clear();
-	body.clear();
-	lines.clear();
-	index = 0;
-	rem.clear();
-	inBody = false;
-	buffer.clear();
-}
-
-// content length and the chunked
-void Request::checkHeaderInfo()
-{
-	if ( !headerExist( "host" ) )
-	{
-		throw ( 400 );
-	}
-	else if ( method == "POST" )
-	{
-		if ( headerExist( "content-length" ) && headerExist( "transfer-encoding" ))
-		{
-			throw ( 400 );
-		}
-		else if ( !headerExist( "content-length" ) && !headerExist( "transfer-encoding" ) )
-			throw ( 400 );
+		throw(e);
 	}
 }
-
-// parse the request
-// i need to start thinking about the response and how to handle it
-// maybe do an enum for the error code that will go with a status code
-// you should check the special characters allowed in http request
-// the key headers can be anything , it dones't need : or value or something
-// key always attached to : , the value doesn't matter
-// key is necessary to have in case of ":value"
-// key can only accept printable characters no space no tab no weird stuff
-// value accept everything

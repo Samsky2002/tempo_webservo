@@ -4,6 +4,7 @@
 #include "webserv.hpp"
 #include "Client.hpp"
 
+#define MAX_SOCKET 1000
 class	Multiplex
 {
 	private:

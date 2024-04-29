@@ -50,8 +50,7 @@ void Multiplex::setup( const std::vector< ServerInfo > & serverInfo )
 		
 		i++;
 	}
-	if (kevent(kq, readEvents.data(), readEvents.size(), NULL, 0, NULL) == -1)
-			throw(Multiplex::KEVENT_EXCEPTION());
+	kevent(kq, readEvents.data(), readEvents.size(), NULL, 0, NULL);
 }
 
 bool Multiplex::is_socket( const std::vector< ServerInfo > & serverInfo, int socket )
@@ -96,8 +95,7 @@ void	Multiplex::accepting(int &fdServer, const Server &server)
 	}
 
 	EV_SET(&Changeevent, new_client, EVFILT_READ, EV_ADD, 0, 0, NULL);
-	if (kevent(kq, &Changeevent, 1, NULL, 0, NULL) == -1)
-		throw(Multiplex::KEVENT_EXCEPTION());
+	kevent(kq, &Changeevent, 1, NULL, 0, NULL);
 	std::cout << "add: " << new_client << std::endl;
 	client.addClient( ClientInfo( new_client, server.getServer( fdServer ) ) );
 }
@@ -135,7 +133,7 @@ void	Multiplex::receiving(int &i )
 	{
 		// recv_buffer[rec] = '\0';
 		charPointerToVector( recv_buffer, buffer, rec );
-		printVec(buffer);
+		// printVec(buffer);
 		try 
 		{
 			client.requestSetup( buffer, i );
@@ -144,12 +142,7 @@ void	Multiplex::receiving(int &i )
 		{
 			memset(&Changeevent, 0, sizeof(Changeevent));
 			EV_SET(&Changeevent, i, EVFILT_WRITE, EV_ADD, 0, 0, NULL);
-			if (kevent(kq, &Changeevent, 1, NULL, 0, NULL) == -1)
-				throw(Multiplex::KEVENT_EXCEPTION());
-			memset(&Changeevent, 0, sizeof(Changeevent));
-			EV_SET(&Changeevent, i, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-			if (kevent(kq, &Changeevent, 1, NULL, 0, NULL))
-				throw(Multiplex::KEVENT_EXCEPTION()); 
+			kevent(kq, &Changeevent, 1, NULL, 0, NULL);
 		}
 	}
 }
@@ -170,8 +163,9 @@ void	Multiplex::sendig(int &fd)
 			perror( "send error: " );
 		}
 		EV_SET(&Changeevent, fd, EVFILT_WRITE, EV_DELETE | EV_CLEAR, 0, 0, NULL);
-		if (kevent(kq, &Changeevent, 1, NULL, 0, NULL))
-			throw(Multiplex::KEVENT_EXCEPTION()); 
+		kevent(kq, &Changeevent, 1, NULL, 0, NULL);
+		EV_SET(&Changeevent, fd, EVFILT_READ, EV_DELETE | EV_CLEAR, 0, 0, NULL);
+		kevent(kq, &Changeevent, 1, NULL, 0, NULL);
 	}
 }
 
@@ -179,23 +173,18 @@ void	Multiplex::multiplexing( const Server &server)
 {
 	try
 	{
-		struct kevent signaledEvents[20]; // Search A solution
+		struct kevent signaledEvents[MAX_SOCKET]; // Search A solution
 		int nevents;
 		while (!quit)
 		{
-			if (( nevents = kevent(kq, NULL, 0, signaledEvents, 20, NULL)) == -1 )
+			if (( nevents = kevent(kq, NULL, 0, signaledEvents, MAX_SOCKET, NULL)) == -1 )
 			{
-				throw(Multiplex::KEVENT_EXCEPTION());
+				// throw(Multiplex::KEVENT_EXCEPTION());
+				continue;
 			}
 			for (int i = 0; i < nevents; ++i)
 			{
 				int fd = signaledEvents[i].ident;
-			 	if (signaledEvents[i].flags & EV_EOF)
-				{
-					// Not yet test that 
-					std::cout << "==== DELETING CLIENT ====" << std::endl;
-					delete_client(fd);
-				}
 				if (signaledEvents[i].filter == EVFILT_READ)
 				{
 					std::cout << "=============== READ HANDLER ==================" << std::endl;
