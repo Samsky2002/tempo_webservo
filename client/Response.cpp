@@ -121,12 +121,12 @@ void Response::redirectionHandle()
 
 void Response::methodHandle( const Request & request )
 {
-	if ( request.method != "GET" && request.method != "POST" && request.method != "DELETE" )
+	if ( request.get_method() != "GET" && request.get_method() != "POST" && request.get_method() != "DELETE" )
 		throw ( 405 );
 	if ( location.methods.empty() )
 		return ;
 	for ( size_t i = 0; i < location.methods.size(); i++ ) {
-		if ( request.method == location.methods[i] )
+		if ( request.get_method() == location.methods[i] )
 			return ;
 	}
 	throw ( 405 );
@@ -209,7 +209,7 @@ void Response::autoIndex( const Request & request )
 {
 	DIR * directory = opendir( resource.c_str() );
 	
-	finalBody += "<html><head><title>Index of " + request.path + "</title></head>";
+	finalBody += "<html><head><title>Index of " + request.get_path() + "</title></head>";
 	finalBody += "<body><h1>Index of /</h1><hr><pre>";
 	if ( directory != NULL ) {
 		struct dirent * entry;
@@ -237,7 +237,7 @@ void Response::directoryHandle( const Request & request )
 	std::cout << resource << std::endl;
 	if ( !hasTrailingSlach() )
 	{
-		header.push_back( std::make_pair( "Location", request.path + "/" ) );
+		header.push_back( std::make_pair( "Location", request.get_path() + "/" ) );
 		throw ( 301 );
 	}
 	if ( hasIndex() )
@@ -271,7 +271,7 @@ void Response::cgiHandle( const Request & request )
 
 void Response::fileHandle( const Request & request )
 {
-	if ( request.method == "POST" || request.method == "DELETE")
+	if ( request.get_method() == "POST" || request.get_method() == "DELETE")
 		throw ( 405 );
 	fillBody();
 	finalBody = std::string( body.begin(), body.end() );
@@ -403,13 +403,13 @@ void Response::clear()
 
 void Response::setup( const Request & request, const ServerInfo & serverInfo )
 {
-	statusCode = request.statusCode;
+	statusCode = request.get_statusCode();
 	setServerConfig( request, serverInfo );
 	try {
 		if ( statusCode != 200 )
 			throw ( statusCode );
 		std::cout << "enter response\n";
-		urlHandle( request.path );
+		urlHandle( request.get_path() );
 		redirectionHandle();
 		methodHandle( request );
 		resourceHandle();

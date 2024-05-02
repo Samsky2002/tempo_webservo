@@ -1,6 +1,5 @@
 server
 	listen 127.0.0.1:501
-	server_name server1
 	error_page 404 /error/404.html
 	client_max_body_size 10000
 	location /

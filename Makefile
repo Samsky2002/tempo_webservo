@@ -31,6 +31,7 @@ INCLUDES = -Iincludes
 
 
 CPPFILES = webserv.cpp \
+			Tools.cpp \
 		   $(HTTP) \
 		   $(SERVER) \
 		   $(MULTIPLEX) \

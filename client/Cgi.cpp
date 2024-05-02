@@ -17,11 +17,11 @@ std::string strToUpper( const std::string & str )
 void Cgi::setupEnv( const Request & request, const Response & response )
 {
 	// i need to use new
-	std::cout << request.body.size() << std::endl;
-	envList.push_back("REQUEST_METHOD=" + strToUpper( request.method )); 
+	std::cout << request.get_body().size() << std::endl;
+	envList.push_back("REQUEST_METHOD=" + strToUpper( request.get_method() )); 
 	if ( request.headerExist( "content-type" ) )
 		envList.push_back( "CONTENT_TYPE=" + request.getHeader( "content-type" ) );
-	envList.push_back("PATH_INFO=" + request.path );
+	envList.push_back("PATH_INFO=" + request.get_path() );
 	// upload path
 	if ( !response.location.upload.empty() )
 		envList.push_back( "UPLOAD_PATH=" + response.location.upload );
@@ -87,7 +87,7 @@ void Cgi::setupInputFile( const Request & request )
     input_fd = fileno(tempFile);
 	if ( input_fd == -1 )
 		perror("tmpfile");
-	std::string tmp( request.body.begin(), request.body.end() );
+	std::string tmp( request.get_body().begin(), request.get_body().end() );
 	write( input_fd, tmp.c_str(), tmp.size() );
 	if (lseek(input_fd, SEEK_SET, 0) == -1) {
         perror("fcntl");

@@ -96,13 +96,13 @@ void	Multiplex::accepting(int &fdServer, const Server &server)
 
 	EV_SET(&Changeevent, new_client, EVFILT_READ, EV_ADD, 0, 0, NULL);
 	kevent(kq, &Changeevent, 1, NULL, 0, NULL);
-	std::cout << "add: " << new_client << std::endl;
+	// std::cout << "add: " << new_client << std::endl;
 	client.addClient( ClientInfo( new_client, server.getServer( fdServer ) ) );
 }
 
 void	Multiplex::delete_client(int fdClient)
 {
-	std::cout << "the client disconnected" << fdClient << std::endl;
+	// std::cout << "the client disconnected" << fdClient << std::endl;
 	struct kevent Client[2];
 	EV_SET(&Client[0], fdClient, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 	EV_SET(&Client[1], fdClient, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
@@ -133,7 +133,6 @@ void	Multiplex::receiving(int &i )
 	{
 		// recv_buffer[rec] = '\0';
 		charPointerToVector( recv_buffer, buffer, rec );
-		// printVec(buffer);
 		try 
 		{
 			client.requestSetup( buffer, i );
@@ -162,9 +161,8 @@ void	Multiplex::sendig(int &fd)
 		{
 			perror( "send error: " );
 		}
+		// Change here : remembeer to explain what i do here
 		EV_SET(&Changeevent, fd, EVFILT_WRITE, EV_DELETE | EV_CLEAR, 0, 0, NULL);
-		kevent(kq, &Changeevent, 1, NULL, 0, NULL);
-		EV_SET(&Changeevent, fd, EVFILT_READ, EV_DELETE | EV_CLEAR, 0, 0, NULL);
 		kevent(kq, &Changeevent, 1, NULL, 0, NULL);
 	}
 }
@@ -187,10 +185,10 @@ void	Multiplex::multiplexing( const Server &server)
 				int fd = signaledEvents[i].ident;
 				if (signaledEvents[i].filter == EVFILT_READ)
 				{
-					std::cout << "=============== READ HANDLER ==================" << std::endl;
+					// std::cout << "=============== READ HANDLER ==================" << std::endl;
 					if (is_socket(server.serverInfo, fd) )
 					{
-						std::cout << "==== Accepting NEW CONNECTION ===" << std::endl;
+						// std::cout << "==== Accepting NEW CONNECTION ===" << std::endl;
 						accepting( fd , server );
 					}
 					else
@@ -198,7 +196,7 @@ void	Multiplex::multiplexing( const Server &server)
 				}
 				else if (signaledEvents[i].filter == EVFILT_WRITE)
 				{
-					std::cout << "=============== WRITE HANDLER ==================" << std::endl;
+					// std::cout << "=============== WRITE HANDLER ==================" << std::endl;
 					sendig(fd);
 				}
 			}

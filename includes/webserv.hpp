@@ -34,5 +34,34 @@
 # include "ServerContext.hpp"
 # include "LocationContext.hpp"
 
-std::vector<std::string> split(const std::string & str, char c);
+std::vector<std::string>    split(const std::string & str, char c);
+int							ConvertHex(const std::string& path) ;
+char						HexToChar(const std::string& path);
+void						toLower(std::string &key);
+void 						parseQuery(std::stringstream& pathStream, std::string& finalPath);
+std::string 				decodePath(const std::string& path);
+std::vector<std::string> 	split( const std::string str );
+
+
+/* ************************************Template********************************************** */
+template <typename T>
+void print(T body)
+{
+	// Just For asscociative Containers;
+	for ( size_t i = 0; i < body.size(); i++ )
+		std::cout << body[i];
+}
+
+template <typename T>
+bool	isExist(T contenair, std::string key) 
+{
+	// Just For containers that holds std::pair
+	for (typename T::iterator it = contenair.begin(); it != contenair.end(); it++)
+	{
+		if (it->first == key)
+			return (true);
+	}
+	return (false);
+}
+
 #endif

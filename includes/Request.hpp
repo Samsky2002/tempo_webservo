@@ -6,14 +6,20 @@
 /*   By: ndahib <ndahib@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/17 09:28:30 by ndahib            #+#    #+#             */
-/*   Updated: 2024/04/28 12:44:05 by ndahib           ###   ########.fr       */
+/*   Updated: 2024/05/02 10:50:56 by ndahib           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 # ifndef REQUEST_HPP
 # define REQUEST_HPP 
 
-#include "webserv.hpp"
+
+#include <vector>
+#include <string>
+#include <map>
+#include <iostream>
+#include <sstream>
+#include <exception>
 
 #define MAX_SIZE_LENGHT 254
 
@@ -27,53 +33,65 @@ class	Request
 		~Request();
 	
 	private:
-		void	split_request();
-		void	parse_request();
-		void	parse_request_line();
-		bool	HostAlreadyExist();
-		void	parse_headers();
-		void	parse_body();
-		void	parse_path();
-		void 	checkChunked();
-		void 	handleChunked();
-		void	print();
+		void				print();
+		void				parse();
+		void				bodyFill();
+		void				headerFill();
+		void				parse_path();
+		void				parseHeader();
+		void				parseRequestLine();
+		void				checkEndOfHeaders();
+		void				handleContentLength();
+		void				handleTransferEncoding();
 	
 	public:
+		
 		void				clear();
 		void				setup( std::vector<char> & newBuffer );
 		bool				headerExist( const std::string & key ) const;
 		std::string const	getHeader( const std::string & key ) const;
+		
+		/* ****************************Getters************************ */
+		
+		std::string 		get_path() const;
+		std::string			get_method() const;
+		int					get_statusCode() const;
+		std::vector< char >	get_body() const;
+		
 
 	/* *******************************Attributes************************ */
 	private:
 		// General Elements;
-		std::vector<char> 			buffer;
-		std::vector<std::string>	TmpHeaders;
+			int 												index;
+			int													statusCode;
+			bool												inBody;
+			std::string											rem;
+			std::vector<char> 									buffer;
+			
+
 
 		// For Chunked
-		size_t						chunkLength;
-		std::string					chunkBuffer;
-		std::pair<std::string, std::string> chunkPair;
+			int 												chunkIndex;
+			size_t												chunkLength;
+			std::string											chunkBuffer;
+			
 		
-	public:
-		int							statusCode;
 		// http Request have 3 component:
 			//1- Request Line : that contain Mthod Path and HTTP version;
-		std::string			path;
-		std::string			method;
-		std::string			protocol;
-		std::string			requestLine;
+			std::string											method;
+			std::string											path;
+			std::string 										protocol;
 			//1.1 Components  of Path
-		std::string			fragement;
-		std::string			Finalpath;
-		std::map<std::string, std::string>  query;
+			std::string											fragement;
+			std::string											Finalpath;
+			std::map<std::string, std::string>					query;
 		
 			//2- Headres 
-		std::vector<std::pair<std::string, std::string> >	header;
-		
+			std::vector<std::string> 							lines;
+			std::vector<std::pair<std::string, std::string> >	header;
 			//3- Message Body
-		std::vector<char>			body;
-		std::vector<char>			Finalbody;
+			std::vector<char>									 body;
+
 };
 
 # endif /*REQUEST_HPP*/
