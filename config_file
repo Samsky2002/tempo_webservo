@@ -1,0 +1,54 @@
+<--syntax-->
+*server
+	-listen 127.0.0.1:80
+	-listen 127.0.0.1:80
+	-server_name server1 server2 server3
+	*error_page 404 /python/404.html
+	-client_max_body_size 100;
+	*location /
+		-allow GET POST DELETE;
+		-return /location;
+		-root /var/www;
+		-autoindex on;
+		-index index.html inde.html home.html;
+	*location /cgi-bin
+		-upload /Desktop;
+// Notes:
+// cgi must me in /cgi-bin DIR
+// i need to check to correct keys --> done
+// keys that don't go together : root and return -  --> done
+// check the necessary so it can run : listen - location - root or return - upload in cgi (maybe)  --> done
+// maybe duplicated keys: methods - server_name - error_page(maybe) - location path - index --> done
+// check paths if they start with / --> to think about
+// same trailing slash of location path and root --> done
+// check server_names if they are different --> if you make same host and port error than this should be error if not then no
+// check if servers have same host and port have different server_names --> to think about
+// upload could be restricted to only cgi-bin
+// i need to verify how methods work
+
+Response:
+// the flow of the response
+// read and write of cgi should be handled by select
+// cgi should not block the server
+// i should check cgi headers
+// max_body_size should also be checked in request when the user passes the body
+// timeout in cgi --> first
+// work with python3 because it's fast
+// maybe ignore a lot of signals
+// all read and write going through select --> second
+// when error page is not found i should put the default
+// handle delete
+// maybe use kill instead of exit
+// result of cgi will go as output i ain't parsing nothing
+// maybe throw an enum instead of random numbers
+// do a default for successful deletion
+// std::to_string is in c++11
+// i need to check the extension of cgi or something
+// in cgi destructor i need to clear if there is a working child process
+// i can throw the child process to the main and see if it's return 1 or 0 to see if it's successful or not
+// i need to check the exit status of the child if it's an error i throw
+// error that returns from read and write of cgi should be returned i guess
+// env variables
+// i need to check the return of write if it wrote all the data or it still need to send more
+// copy assignment should be handled well
+// receive error: : Connection reset by peer

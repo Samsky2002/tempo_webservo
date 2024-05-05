@@ -1,0 +1,25 @@
+server
+	listen 127.0.0.1:800
+	server_name server1
+	error_page 404 /Users/oakerkao/Desktop/nginx/html/error_pages/404.html
+	location /
+		allow GET POST DELETE
+		root /Users/ndahib/Desktop/html/
+		autoindex on
+	location /cgi-bin
+		allow GET POST
+		root /Users/ndahib/Desktop/html/cgi-bin
+		upload /Users/oakerkao/Desktop/html
+server
+	listen 127.0.0.1:800
+	server_name oussama
+	error_page 404 /Users/oakerkao/Desktop/nginx/error/404.html
+	location /
+		autoindex on
+		root /Users/oakerkao/Desktop/nginx/html/error_pages/
+server
+	listen 127.0.0.1:800
+	error_page 404 /Users/oakerkao/Desktop/nginx/error/404.html
+	location /
+		autoindex on
+		root /Users/oakerkao/Desktop/nginx/
