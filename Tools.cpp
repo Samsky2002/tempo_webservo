@@ -26,20 +26,10 @@ std::vector<std::string> split(const std::string& str, char c) {
 }
 
 int set_nonblocking(int fd) {
-    // Get current file descriptor flags
-    // Forbidden flags
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags == -1) {
-        perror("Error getting file descriptor flags");
-        return -1;
-    }
 
-    // Add O_NONBLOCK to the flags
-    flags |= O_NONBLOCK;
-
-    // Set the new flags back to the file descriptor
-    if (fcntl(fd, F_SETFL, flags) == -1) {
-        perror("Error setting file descriptor to non-blocking");
+    // Set the new flag back to the file descriptor
+    if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1) {
+        perror("Error setting file descriptor to non-blocking : ");
         return -1;
     }
 

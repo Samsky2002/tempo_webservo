@@ -21,7 +21,7 @@ SocketServer::SocketServer( int port, std::string host )
 	this->option_name = SO_REUSEADDR;
 	this->option_value = 1;
 	this->option_len = sizeof( int );
-	this->backlog = 100;
+	this->backlog = 1000;
 
 }
 
