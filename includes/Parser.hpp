@@ -4,11 +4,17 @@
 # include "ServerContext.hpp"
 
 class Parser {
-	public:
+	private:
 		std::vector< ServerContext > serverContext;
 		ServerContext tmpServerContext;
 		LocationContext tmpLocationContext;
 		std::vector< std::vector< std::string > > directives;
+	public:
+		Parser();
+		Parser( const Parser & parser );
+		Parser & operator=( const Parser & parser );
+		~Parser();
+		std::vector< ServerContext > get_serverContext() const;
 		void execute( const std::string & file );
 		void fill();
 		void parse_server();

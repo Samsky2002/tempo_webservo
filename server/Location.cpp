@@ -2,6 +2,7 @@
 
 Location::Location()
 {
+	autoindex = false;
 }
 
 Location::Location(const Location & location)
@@ -19,6 +20,7 @@ Location & Location::operator=(const Location & location)
 		this->root = location.root;
 		this->autoindex = location.autoindex;
 		this->index = location.index;
+		this->upload = location.upload;
 	}
 	return (*this);
 }
@@ -26,6 +28,48 @@ Location & Location::operator=(const Location & location)
 Location::~Location()
 {
 
+}
+
+std::string Location::get_path() const {
+	return ( path );
+}
+
+std::string Location::get_root() const {
+	return ( root );
+}
+
+std::string Location::get_redirection() const {
+	return ( redirection );
+}
+
+std::vector< std::string > Location::get_index() const {
+	return ( index );
+}
+
+std::string Location::get_index_idx( size_t idx ) const {
+	if ( idx >= index.size() ) {
+		throw ( std::string( "get_index_idx: out_of_range" ) );
+	}
+	return ( index[ idx ] );
+}
+
+bool Location::get_autoindex() const {
+	return ( autoindex );
+}
+
+std::vector< std::string > Location::get_methods() const {
+	return ( methods );
+}
+
+std::string Location::get_methods_idx( size_t idx ) const {
+	if ( idx >= methods.size() ) {
+		throw ( std::string( "get_methods_idx: out_of_range" ) );
+	}
+	return ( methods[ idx ] );
+}
+
+std::string Location::get_upload() const {
+	return ( upload );
 }
 
 void Location::print() {
@@ -126,6 +170,18 @@ void Location::fill_upload( const std::vector< std::string > & directive ) {
 	upload = directive.at( 1 );
 }
 
+void Location::check_trailing_slash() {
+	if ( root.empty() || path.empty() )
+		return ;
+	if ( path.at( path.length() - 1 ) == '/' && root.at( root.length() - 1 ) != '/' ) {
+		throw ( std::string( "not same trailing slash" ) );
+	}
+	else if ( path.at( path.length() - 1 ) != '/' && root.at( root.length() - 1 ) == '/' ) {
+		throw ( std::string( "not same trailing slash" ) );
+	}
+}
+
+
 void Location::fill( const std::vector< std::vector< std::string > > & directives ) {
 	for ( size_t i = 0; i < directives.size(); i++ ) {
 		if ( directives.at( i ).at( 0 ) == "location" ) {
@@ -150,4 +206,6 @@ void Location::fill( const std::vector< std::vector< std::string > > & directive
 			fill_upload( directives.at( i ) );
 		}
 	}
+	check_trailing_slash();
+	// checki path and root if same trailing slash
 }

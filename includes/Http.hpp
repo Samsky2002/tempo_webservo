@@ -7,12 +7,12 @@
 
 class Http
 {
-	public:
+	private:
 		Server server;
 		Multiplex multiplex;
 		Parser parser;
 		std::string config_file;
-		
+	public:
 		Http();
 		Http( const Http & http );
 		Http & operator=( const Http & http );

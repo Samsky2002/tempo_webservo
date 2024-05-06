@@ -6,7 +6,7 @@
 /*   By: ndahib <ndahib@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/19 08:07:29 by ndahib            #+#    #+#             */
-/*   Updated: 2024/05/02 10:56:45 by ndahib           ###   ########.fr       */
+/*   Updated: 2024/05/06 10:53:12 by ndahib           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,7 +109,7 @@ void	Request::parse_path()
 		fragement_found = part.find( '#' );
 		if ((del = part.find( '=' )) == std::string::npos)
 		{
-			throw(400);
+			throw(4001);
 		}
 		query[part.substr(0, del)] = part.substr(del + 1, part.size() - fragement_found + 1);
 		if (fragement_found != std::string::npos)
@@ -156,7 +156,7 @@ void	Request::parseHeader()
 	toLower(key);
 	if (key == "host" && isExist(header, key) == true) 
 	{
-		throw(400);
+		throw(4002);
 	}
 	header.push_back(std::make_pair(key, value));
 }
@@ -176,16 +176,17 @@ void Request::checkEndOfHeaders()
 {
 	if (index != 0 && lines[index] == "\r\n" && lines[index - 1] != "\r\n")
 	{
+		::print(buffer);
 		if (method != "POST")
 		{
-			(method == "GET" && !headerExist( "host" )) ? throw(400) : throw(200);
+			(method == "GET" && !headerExist( "host" )) ? throw(4003) : throw(200);
 		}
 		else
 		{
 			if ((headerExist( "content-length" ) && headerExist( "transfer-encoding" ))||
 				(!headerExist( "content-length" ) && !headerExist( "transfer-encoding" )) )
 			{
-				throw(400);
+				throw(4004);
 			}
 		}
 		inBody = true;
@@ -214,6 +215,8 @@ void	Request::headerFill()
 			lines.push_back(currentLine);
 			currentLine.clear();
 			parse();
+			if (inBody == true)
+				return ;
 			index++;
 		}
 	}
@@ -225,10 +228,11 @@ void	Request::headerFill()
 
 void	Request::handleContentLength()
 {
-	body.insert( body.end(), buffer.begin(), buffer.end() - 2 );
+	body.insert( body.end(), buffer.begin(), buffer.end());
+	std::cout << "content length: " << getHeader("content-length")  << "===>>" << body.size() << std::endl;
 	if ( (int)body.size() != std::atoi(getHeader("content-length").c_str()) )
 	{
-		throw ( 1 );
+		throw ( 4005 );
 	}
 	else if ( (int)body.size() == std::atoi(getHeader("content-length").c_str()))
 		throw ( 200 );
@@ -308,16 +312,16 @@ void	Request::print()
 
 void Request::clear()
 {
+	index = 0;
 	statusCode = 0;
+	inBody = false;
 	method.clear();	
 	path.clear();
 	protocol.clear();
 	header.clear();
 	body.clear();
 	lines.clear();
-	index = 0;
 	rem.clear();
-	inBody = false;
 	buffer.clear();
 	fragement.clear();
 	Finalpath.clear();
@@ -331,6 +335,7 @@ void Request::clear()
 void Request::setup( std::vector<char> & newBuffer )
 {
 	buffer = newBuffer;
+	// ::print(buffer);
 	try {
 		headerFill();
 		bodyFill();

@@ -6,19 +6,14 @@
 /*   By: ndahib <ndahib@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/17 09:28:30 by ndahib            #+#    #+#             */
-/*   Updated: 2024/05/02 10:50:56 by ndahib           ###   ########.fr       */
+/*   Updated: 2024/05/06 08:17:27 by ndahib           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 # ifndef REQUEST_HPP
 # define REQUEST_HPP 
 
-
-#include <vector>
-#include <string>
 #include <map>
-#include <iostream>
-#include <sstream>
 #include <exception>
 
 #define MAX_SIZE_LENGHT 254

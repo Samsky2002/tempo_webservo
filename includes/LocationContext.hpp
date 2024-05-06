@@ -3,10 +3,17 @@
 # include <vector>
 
 class LocationContext {
+	private:
+		std::vector< std::vector< std::string > > locationDirectives;
 	public:
-	std::vector< std::vector< std::string > > locationDirectives;
-	void clear();
-	void print();
+		LocationContext();
+		LocationContext( const LocationContext & locationContext );
+		LocationContext & operator=( const LocationContext & locationContext );
+		~LocationContext();
+		std::vector< std::vector< std::string > > get_locationDirectives() const;
+		void set_locationDirectives( std::vector< std::string > directive );
+		void clear();
+		void print();
 };
 
 #endif

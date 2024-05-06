@@ -1,5 +1,50 @@
 #include "webserv.hpp"
 
+std::vector<std::string> split(const std::string& str, char c) {
+    std::vector<std::string> result;
+    std::string currentWord;
+    bool inWord = false;
+
+    for (size_t i = 0; i < str.length(); ++i) {
+        char ch = str[i];
+
+        if (ch == c) {
+            if (inWord) {
+                result.push_back(currentWord);
+                currentWord.clear();
+                inWord = false;
+            }
+        } else {
+            currentWord += ch;
+            inWord = true;
+        }
+    }
+    if (inWord) {
+        result.push_back(currentWord);
+    }
+    return result;
+}
+
+int set_nonblocking(int fd) {
+    // Get current file descriptor flags
+    // Forbidden flags
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1) {
+        perror("Error getting file descriptor flags");
+        return -1;
+    }
+
+    // Add O_NONBLOCK to the flags
+    flags |= O_NONBLOCK;
+
+    // Set the new flags back to the file descriptor
+    if (fcntl(fd, F_SETFL, flags) == -1) {
+        perror("Error setting file descriptor to non-blocking");
+        return -1;
+    }
+
+    return 0; // Success
+}
 
 std::vector<std::string> split( const std::string str )
 {

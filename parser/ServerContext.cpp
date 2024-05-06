@@ -5,6 +5,26 @@ void ServerContext::clear() {
 	serverDirectives.clear();
 }
 
+ServerContext::ServerContext() {
+
+}
+
+ServerContext::ServerContext( const ServerContext & serverContext ) {
+	*this = serverContext;
+}
+
+ServerContext & ServerContext::operator=( const ServerContext & serverContext ) {
+	if ( this != &serverContext ) {
+		this->locationContext = serverContext.locationContext;
+		this->serverDirectives = serverContext.serverDirectives;
+	}
+	return ( *this );
+}
+
+ServerContext::~ServerContext() {
+
+}
+
 void ServerContext::print() {
 	std::cout << "----------------------serverDirectives-Beg---------------------\n";
 	for ( size_t i = 0; i < serverDirectives.size(); i++ ) {
@@ -19,4 +39,20 @@ void ServerContext::print() {
 		locationContext.at( i ).print();
 		std::cout << "----------------------locationContext-End---------------------\n";
 	}
+}
+
+std::vector< LocationContext > ServerContext::get_locationContext() const {
+	return ( locationContext );
+}
+
+std::vector< std::vector< std::string > > ServerContext::get_serverDirectives() const {
+	return ( serverDirectives );
+}
+
+void ServerContext::set_locationContext( LocationContext locationContext ) {
+	this->locationContext.push_back( locationContext );
+}
+
+void ServerContext::set_serverDirectives( std::vector< std::string > serverDirective ) {
+	this->serverDirectives.push_back( serverDirective );
 }

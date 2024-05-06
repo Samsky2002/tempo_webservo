@@ -1,39 +1,30 @@
 #include "webserv.hpp"
 
-std::vector<std::string> split(const std::string& str, char c) {
-    std::vector<std::string> result;
-    std::string currentWord;
-    bool inWord = false;
-
-    for (size_t i = 0; i < str.length(); ++i) {
-        char ch = str[i];
-
-        if (ch == c) {
-            if (inWord) {
-                result.push_back(currentWord);
-                currentWord.clear();
-                inWord = false;
-            }
-        } else {
-            currentWord += ch;
-            inWord = true;
-        }
-    }
-    if (inWord) {
-        result.push_back(currentWord);
-    }
-    return result;
-}
 int	main( int argc, char **argv )
 {
 	std::string file;
 	Http http;
 
+	signal(SIGPIPE, SIG_IGN);
 	if ( argc > 2 )
 		return ( 1 );
 	file = argv[1] ? argv[1] : "config_file";
-	http.execute( file );
-	//http.setup(file);
-	//http.launch();
-	//maybe do an http exec
+	try {
+		http.execute( file );
+	}
+	catch ( std::string & e ) {
+		std::cout << "main: " << e << std::endl;
+	}
+	catch ( std::exception & e) {
+		std::cout << e.what() << std::endl;
+	}
+	catch ( const char * e ) {
+		if ( strcmp( e, "failed" ) == 0 ) {
+			return ( 1 );
+		}
+		//std::cout << e.what() << std::endl;
+	}
+	catch ( ... ) {
+		std::cout << "something went wrong here\n";
+	}
 }

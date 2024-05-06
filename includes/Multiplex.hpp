@@ -1,3 +1,4 @@
+
 # ifndef Multiplex_HPP
 # define Multiplex_HPP
 
@@ -9,40 +10,39 @@ class	Multiplex
 {
 	private:
 		//General Elements;
-		int 						quit;
 		Client						client;
+		std::string 				result;
+		int 						newfd;
 	 
-		//Elements For Kevents;
-		int 						kq;
+		// Sets;
+		fd_set						readfds;
+		fd_set						writefds;
+		fd_set						tmp_readfds;
+		fd_set						tmp_writefds;
+
+		//Elements For Select;
+		int							nfds;
 		struct timespec 			timeout;
-		struct kevent				Changeevent;
 
 		//Method
-		Multiplex &operator=( const Multiplex & multiplex );
-		Multiplex( const Multiplex & multiplex );
+		Multiplex &operator=( const Multiplex& multiplex );
+		Multiplex( const Multiplex& multiplex );
 
-		void	receiving( int &i );
-		void	sendig(int &fd );
-		void	accepting( int &fdServer, const Server &server ); 
-		void	delete_client( int client);
-		bool	is_socket( const std::vector< ServerInfo > & serverInfo, int socket );
+		void	HandleCgiRead(int &CgiSocket);
+		void	HandleCgiWrite(int &CgiSocket);
+		void	HandleClientRead(int &clientSocket);
+		void	HandleClientWrite(int &clientSocket);
+		void	HandleNewConnection(int &ServerSocket, const Server &server);
+		bool	isServer( const std::vector< ServerInfo >& serverInfo, int &socket );
 
 	public:
 		Multiplex();
 		~Multiplex();
 		
 		void	execute( const Server & server );
-		void	setup( const std::vector< ServerInfo > & serverInfo );
 		void	multiplexing( const Server & server );
-	
-		class KQUEUE_EXCEPTION : public std::exception
-		{
-			const char *what() const _NOEXCEPT;
-		};
-		class KEVENT_EXCEPTION : public std::exception
-		{
-			const char *what() const _NOEXCEPT;
-		};
+		void	setup( const std::vector< ServerInfo > & serverInfo );
+
 };
 
 #endif

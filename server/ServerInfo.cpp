@@ -27,6 +27,33 @@ ServerInfo::~ServerInfo()
 
 }
 
+int ServerInfo::get_id() const {
+	return ( id );
+}
+
+int ServerInfo::get_port() const {
+	return ( port );
+}
+
+std::string ServerInfo::get_host() const {
+	return ( host );
+}
+
+void ServerInfo::set_serverConfig( ServerConfig serverConfig ) {
+	this->serverConfig.push_back( serverConfig );
+}
+
+ServerConfig ServerInfo::get_serverConfig_idx( size_t idx ) const {
+	if ( idx >= serverConfig.size() ) {
+		throw ( std::string( "get_serverConfig_idx: out_of_range" ) );
+	}
+	return ( serverConfig[ idx ] );
+}
+
+std::vector< ServerConfig > ServerInfo::get_serverConfig() const {
+	return ( serverConfig );
+}
+
 void ServerInfo::launch()
 {
 	SocketServer socketServer( port, host );
@@ -39,9 +66,9 @@ void ServerInfo::print() {
 	std::cout << "host: " << host << std::endl;
 	std::cout << "port: " << port << std::endl;
 	for ( size_t i = 0; i < serverConfig.size(); i++ ) {
-		std::cout << "--------------------ServerConfig--BEG--------------\n";
+		std::cout << "####################ServerConfig--BEG####################\n";
 		serverConfig.at( i ).print();
-		std::cout << "--------------------ServerConfig--END--------------\n";
+		std::cout << "####################ServerConfig--END####################\n";
 	}
 }
 
@@ -54,7 +81,6 @@ void ServerInfo::clear() {
 
 // maybe do a tokenizer and check
 void ServerInfo::check_host( const std::string & strHost ) {
-	//(void)strHost;
 	std::vector< std::string > values;
 	int nb = 0;
 	std::stringstream ss;

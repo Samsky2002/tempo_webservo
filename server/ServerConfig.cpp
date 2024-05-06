@@ -2,7 +2,7 @@
 
 ServerConfig::ServerConfig()
 {
-
+	client_max_body_size = -1;
 }
 
 
@@ -26,6 +26,42 @@ ServerConfig & ServerConfig::operator=( const ServerConfig & serverConfig )
 ServerConfig::~ServerConfig()
 {
 
+}
+
+void ServerConfig::set_location( Location location ) {
+	this->location.push_back( location );
+}
+
+std::vector< Location > ServerConfig::get_location() const {
+	return ( location );
+}
+
+Location ServerConfig::get_location_idx( size_t idx ) const {
+	if ( idx >= location.size() ) {
+		throw ( std::string( "get_location_idx: out_of_range" ) );
+	}
+	return ( location[ idx ] );
+}
+
+std::vector< std::string > ServerConfig::get_server_names() const {
+	return ( server_names );
+}
+
+std::string ServerConfig::get_server_names_idx( size_t idx ) const {
+	if ( idx >= server_names.size() ) {
+		throw ( std::string( "get_server_names_idx: out_of_range" ) );
+	}
+	return ( server_names[ idx ] );
+}
+std::vector< std::pair<int, std::string > > ServerConfig::get_error_pages() const {
+	return ( error_pages );
+}
+
+std::pair<int, std::string> ServerConfig::get_error_pages_idx( size_t idx ) const {
+	if ( idx >= error_pages.size() ) {
+		throw ( std::string( "get_error_pages_idx: out_of_range" ) );
+	}
+	return ( error_pages[ idx ] );
 }
 
 void ServerConfig::print() {

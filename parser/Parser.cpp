@@ -1,13 +1,33 @@
 #include "webserv.hpp"
 
-// check if you are going to use exit or not
-//
+Parser::Parser() {
 
-// to improve this split
+}
 
-// you need to figure out what you should do with new line
+Parser::Parser( const Parser & parser ) {
+	*this = parser;
+}
+
+Parser & Parser::operator=( const Parser & parser ) {
+	if ( this != &parser ) {
+		this->serverContext = parser.serverContext;
+		this->tmpServerContext = parser.tmpServerContext;
+		this->tmpLocationContext = parser.tmpLocationContext;
+		this->directives = parser.directives;
+	}
+	return ( *this );
+}
+
+Parser::~Parser() {
+
+}
+
+std::vector< ServerContext > Parser::get_serverContext() const {
+	return ( serverContext );
+}
+
 void Parser::parse_location() {
-	tmpLocationContext.locationDirectives.push_back( directives.at( 0 ) );
+	tmpLocationContext.set_locationDirectives( directives.at( 0 ) );
 	directives.erase( directives.begin() );
 	while ( !directives.empty() ) {
 		if ( directives.at( 0 ).empty() ) {
@@ -16,7 +36,7 @@ void Parser::parse_location() {
 		}
 		if ( directives.at( 0 ).at( 0 ).size() > 1 && directives.at( 0 ).at( 0 ).at( 0 ) == '\t' && directives.at( 0 ).at( 0 ).at( 1 ) == '\t' ) {
 			directives.at( 0 ).at( 0 ) = directives.at( 0 ).at( 0 ).substr( 2 );
-			tmpLocationContext.locationDirectives.push_back( directives.at( 0 ) );
+			tmpLocationContext.set_locationDirectives( directives.at( 0 ) );
 			directives.erase( directives.begin() );
 		}
 		else {
@@ -35,11 +55,11 @@ void Parser::parse_server() {
 			directives.at( 0 ).at( 0 ) = directives.at( 0 ).at( 0 ).substr( 1 );
 			if ( directives.at( 0 ).at( 0 ) == "location" ) {
 				parse_location();
-				tmpServerContext.locationContext.push_back( tmpLocationContext );
+				tmpServerContext.set_locationContext( tmpLocationContext );
 				tmpLocationContext.clear();
 				continue ;
 			}
-			tmpServerContext.serverDirectives.push_back( directives.at( 0 ) );
+			tmpServerContext.set_serverDirectives( directives.at( 0 ) );
 			directives.erase( directives.begin() );
 		}
 		else {
@@ -75,7 +95,6 @@ void Parser::check_server_keys( const std::vector< std::vector< std::string > > 
 	for ( size_t i = 0; i < serverDirectives.size(); i++ ) {
 		if ( serverDirectives.at( i ).empty() )
 			throw ( std::string( "syntax error" ) );
-		//std::cout << serverDirectives.at( i ).at( 0 ) << std::endl;
 		if ( serverDirectives.at( i ).at( 0 ) != "listen" && serverDirectives.at( i ).at( 0 ) != "server_name" && serverDirectives.at( i ).at( 0 ) != "error_page" && serverDirectives.at( i ).at( 0 ) != "client_max_body_size" ) {
 			throw ( std::string( "unknown server key" ) );
 		}
@@ -84,7 +103,6 @@ void Parser::check_server_keys( const std::vector< std::vector< std::string > > 
 
 void Parser::check_location_keys( const std::vector< std::vector< std::string > > & locationDirectives ) {
 	for ( size_t i = 0; i < locationDirectives.size(); i++ ) {
-		//std::cout << locationDirectives.at( i ).at( 0 ) << std::endl;
 		if ( locationDirectives.at( i ).empty() )
 			throw ( std::string( "syntax error" ) );
 		if ( locationDirectives.at( i ).at( 0 ) != "allow" && locationDirectives.at( i ).at( 0 ) != "return" && locationDirectives.at( i ).at( 0 ) != "autoindex" && locationDirectives.at( i ).at( 0 ) != "root" && locationDirectives.at( i ).at( 0 ) != "index" && locationDirectives.at( i ).at( 0 ) != "upload" && locationDirectives.at( i ).at( 0 ) != "location" ) {
@@ -95,9 +113,7 @@ void Parser::check_location_keys( const std::vector< std::vector< std::string > 
 
 void Parser::check_duplicated_keys( const std::vector< std::vector< std::string > > & directives ) {
 	for ( size_t i = 0; i < directives.size(); i++ ) {
-		//std::cout << "i: " << directives.at( i ).at( 0 ) << std::endl;
 		for ( size_t j = i + 1; j < directives.size(); j++ ) {
-			//std::cout << "j: " << directives.at( j ).at( 0 ) << std::endl;
 			if ( directives.at( i ).at( 0 ) == directives.at( j ).at( 0 ) && directives.at( i ).at( 0 ) != "error_page" && directives.at( i ).at( 0 ) != "location" )
 				throw ( std::string( "duplicated keys" ) );
 		}
@@ -144,12 +160,12 @@ void Parser::check_location_directives( const std::vector< std::vector< std::str
 
 void Parser::check() {
 	for ( size_t i = 0; i < serverContext.size(); i++ ) {
-		check_server_directives( serverContext.at( i ).serverDirectives );
-		if ( serverContext.at( i ).locationContext.empty() ) {
+		check_server_directives( serverContext.at( i ).get_serverDirectives() );
+		if ( serverContext[ i ].get_locationContext().empty() ) {
 			throw ( std::string( "no location found" ) );
 		}
-		for ( size_t j = 0; j < serverContext.at( i ).locationContext.size(); j++ ) {
-			check_location_directives( serverContext.at( i ).locationContext.at( j ).locationDirectives );
+		for ( size_t j = 0; j < serverContext.at( i ).get_locationContext().size(); j++ ) {
+			check_location_directives( serverContext.at( i ).get_locationContext().at( j ).get_locationDirectives() );
 		}
 	}
 }

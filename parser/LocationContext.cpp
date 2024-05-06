@@ -1,5 +1,25 @@
 #include "webserv.hpp"
 
+
+LocationContext::LocationContext() {
+
+}
+
+LocationContext::LocationContext( const LocationContext & locationContext ) {
+	*this = locationContext;
+}
+
+LocationContext & LocationContext::operator=( const LocationContext & locationContext ) {
+	if ( this != &locationContext ) {
+		this->locationDirectives = locationContext.locationDirectives;
+	}
+	return ( *this );
+}
+
+LocationContext::~LocationContext() {
+
+}
+
 void LocationContext::clear() {
 	locationDirectives.clear();
 }
@@ -11,4 +31,11 @@ void LocationContext::print() {
 		}
 		std::cout << std::endl;
 	}
+}
+std::vector< std::vector< std::string > > LocationContext::get_locationDirectives() const {
+	return ( locationDirectives );
+}
+
+void LocationContext::set_locationDirectives( std::vector< std::string > directive ) {
+	locationDirectives.push_back( directive );
 }

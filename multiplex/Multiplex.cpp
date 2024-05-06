@@ -3,12 +3,8 @@
 Multiplex::Multiplex()
 {
 	// Adding constructor
-	quit = false;
 	timeout.tv_sec = 5;
 	timeout.tv_nsec = 0;
-	kq = kqueue();
-	if (kq == -1)
-		throw(Multiplex::KQUEUE_EXCEPTION());
 }
 
 Multiplex::Multiplex( const Multiplex & multiplex )
@@ -28,41 +24,6 @@ Multiplex & Multiplex::operator=( const Multiplex & multiplex )
 
 Multiplex::~Multiplex()
 {
-	close(kq); // Closing file descriptor of queue that create kqueue();
-}
-
-void Multiplex::execute( const Server & server )
-{
-	setup( server.serverInfo );
-	multiplexing( server );
-}
-
-void Multiplex::setup( const std::vector< ServerInfo > & serverInfo )
-{
-	//Changing in setup for kevent
-	size_t i = 0;
-	std::vector<struct kevent> 	readEvents;
-	while ( i < serverInfo.size() )
-	{
-		memset(&Changeevent, 0, sizeof(Changeevent));
-		EV_SET(&Changeevent, serverInfo[i].id, EVFILT_READ, EV_ADD, 0, 0, NULL);
-		readEvents.push_back(Changeevent);
-		
-		i++;
-	}
-	kevent(kq, readEvents.data(), readEvents.size(), NULL, 0, NULL);
-}
-
-bool Multiplex::is_socket( const std::vector< ServerInfo > & serverInfo, int socket )
-{
-	for ( size_t i = 0; i < serverInfo.size(); i++ )
-	{
-		if ( socket == serverInfo[i].id )
-		{
-			return ( true );
-		}
-	}
-	return ( false );
 }
 
 void charPointerToVector(const char* charArray, std::vector<char>& charVector, ssize_t len) 
@@ -75,149 +36,162 @@ void charPointerToVector(const char* charArray, std::vector<char>& charVector, s
 	}
 }
 
-void printVec( std::vector<char> & vec )
+void Multiplex::execute( const Server & server )
 {
-	for ( size_t i = 0; i < vec.size(); i++ )
-	{
-		std::cout << vec[i];
-	}
+	setup( server.get_serverInfo() );
+	multiplexing( server );
 }
 
+void Multiplex::setup( const std::vector< ServerInfo > & serverInfo )
+{
+	FD_ZERO(&readfds);
+	FD_ZERO(&writefds);
+	FD_ZERO(&tmp_readfds);
+	FD_ZERO(&tmp_writefds);
+	for (size_t i = 0; i < serverInfo.size(); i++)
+	{
+		FD_SET(serverInfo[i].get_id(), &tmp_readfds);
+	}
+	nfds = serverInfo[ serverInfo.size() - 1].get_id();
+}
+
+bool Multiplex::isServer( const std::vector< ServerInfo >& serverInfo, int &socket )
+{
+	for ( size_t i = 0; i < serverInfo.size(); i++ )
+	{
+		if ( socket == serverInfo[i].get_id() )
+		{
+			return ( true );
+		}
+	}
+	return ( false );
+}
 
 /////////////////////////////////////////////Helper Function///////////////////////////////////////////////
-void	Multiplex::accepting(int &fdServer, const Server &server)
+
+void	Multiplex::HandleNewConnection(int &ServerSocket, const Server &server)
 {
-	int new_client = accept(fdServer, NULL, NULL); 
-	if (new_client == -1)
-	{
-		perror("error in accepting new_connection ");
+	newfd = accept(ServerSocket, NULL, NULL);
+	if (newfd == -1){
+		perror("Error in Accepting new Client: ");
 		return;
 	}
-
-	EV_SET(&Changeevent, new_client, EVFILT_READ, EV_ADD, 0, 0, NULL);
-	kevent(kq, &Changeevent, 1, NULL, 0, NULL);
-	// std::cout << "add: " << new_client << std::endl;
-	client.addClient( ClientInfo( new_client, server.getServer( fdServer ) ) );
+	set_nonblocking(newfd);
+	std::cout << "Accept :" << newfd << std::endl;
+	FD_SET(newfd, &tmp_readfds);
+	nfds = std::max(newfd, nfds);
+	client.addClient(ClientInfo(newfd, server.get_serverInfo_idx(ServerSocket)));
 }
 
-void	Multiplex::delete_client(int fdClient)
+void	Multiplex::HandleCgiRead(int &CgiSocket)
 {
-	// std::cout << "the client disconnected" << fdClient << std::endl;
-	struct kevent Client[2];
-	EV_SET(&Client[0], fdClient, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-	EV_SET(&Client[1], fdClient, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-	kevent(kq ,Client , 2, NULL, 0, NULL);
-	client.removeClient( fdClient );
-	close(fdClient);
+	client.fillCgiRead(CgiSocket, tmp_readfds);
 }
 
-void	Multiplex::receiving(int &i )
+void	Multiplex::HandleClientRead(int &clientSocket)
 {
-	char recv_buffer[1024];
-	std::vector<char> buffer;
+	char	recv_buffer[1024];
+	std::vector<char > buffer;
 
 	memset( recv_buffer, '\0', sizeof( recv_buffer ) );
 	buffer.clear();
-	int rec = recv( i,  recv_buffer, sizeof( recv_buffer ), 0 );
-	if ( rec <= 0 )
+	int rec = recv(clientSocket, recv_buffer, sizeof(recv_buffer), 0);
+	if (rec <= 0)
 	{
-		if (rec == 0)
-		{
-			std::cout << "Client Disconnected" << std::endl;
+		if (rec == 0){
+			std::cout << "Connection Closed" << std::endl;
 		}
-		else
-			perror( "receive error: " );
-		delete_client(i);
+		client.removeClient(clientSocket);
+		FD_CLR(clientSocket, &tmp_readfds);
+		FD_CLR(clientSocket, &tmp_writefds);
+		close( clientSocket );
 	}
-	else
-	{
-		// recv_buffer[rec] = '\0';
-		charPointerToVector( recv_buffer, buffer, rec );
-		try 
-		{
-			client.requestSetup( buffer, i );
-		}
-		catch ( int e ) 
-		{
-			memset(&Changeevent, 0, sizeof(Changeevent));
-			EV_SET(&Changeevent, i, EVFILT_WRITE, EV_ADD, 0, 0, NULL);
-			kevent(kq, &Changeevent, 1, NULL, 0, NULL);
+	else{
+		charPointerToVector(recv_buffer, buffer, rec);
+		::print(buffer);
+		try{
+			client.requestSetup(buffer, clientSocket);
+		}catch( int e){
+			FD_SET(clientSocket, &tmp_writefds);
 		}
 	}
 }
 
-void	Multiplex::sendig(int &fd)
+void	Multiplex::HandleCgiWrite(int &CgiSocket)
 {
-	try 
-	{
-		client.responseSetup( fd );
-	}
-	catch ( int e ) 
-	{
-		std::cout << "test\n";
-		std::string send_buffer = client.result( fd );
-		int sen = send( fd, send_buffer.c_str(), send_buffer.length(), 0 );
-		if ( sen == -1 )
-		{
-			perror( "send error: " );
-		}
-		// Change here : remembeer to explain what i do here
-		EV_SET(&Changeevent, fd, EVFILT_WRITE, EV_DELETE | EV_CLEAR, 0, 0, NULL);
-		kevent(kq, &Changeevent, 1, NULL, 0, NULL);
-	}
+	client.fillCgiWrite(CgiSocket, tmp_writefds);
 }
 
-void	Multiplex::multiplexing( const Server &server)
+void	Multiplex::HandleClientWrite(int &clientSocket)
 {
-	try
-	{
-		struct kevent signaledEvents[MAX_SOCKET]; // Search A solution
-		int nevents;
-		while (!quit)
-		{
-			if (( nevents = kevent(kq, NULL, 0, signaledEvents, MAX_SOCKET, NULL)) == -1 )
-			{
-				// throw(Multiplex::KEVENT_EXCEPTION());
-				continue;
+	std::string tmp;
+
+	if ( !client.response_status( clientSocket ) ) {
+		try {
+			client.responseSetup( clientSocket, tmp_readfds, tmp_writefds, nfds );
+		}
+		catch ( int e ) {
+			result = client.result( clientSocket );
+		}
+	}
+	else {
+		try {
+			if ( result.empty() ) {
+				throw ( 1 );
 			}
-			for (int i = 0; i < nevents; ++i)
+			tmp = result.substr( 0, 2000000 );
+			std::cout << "Enter here\n";
+			int sen = send( clientSocket, tmp.c_str(), tmp.length(), 0 );
+
+			if ( sen <= 0) {
+				result.erase(0, sen);
+				perror( "send error: " );
+				throw ( 1 );
+			}
+			result.erase(0, sen);
+		}
+		catch ( int e ) {
+			client.clear(clientSocket);
+			std::cout << "Clearing write\n";
+			FD_CLR(clientSocket, &tmp_writefds);
+		}
+	}
+}
+
+void	Multiplex::multiplexing( const Server& server)
+{
+	while (true)
+	{
+		readfds = tmp_readfds;
+		writefds = tmp_writefds;
+		if (select(nfds + 1, &readfds, &writefds, NULL, NULL) == -1)
+		{
+			perror("select");
+		}
+		for (int i = 0; i <= nfds; i++)
+		{
+			if (FD_ISSET(i, &readfds))
 			{
-				int fd = signaledEvents[i].ident;
-				if (signaledEvents[i].filter == EVFILT_READ)
-				{
-					// std::cout << "=============== READ HANDLER ==================" << std::endl;
-					if (is_socket(server.serverInfo, fd) )
-					{
-						// std::cout << "==== Accepting NEW CONNECTION ===" << std::endl;
-						accepting( fd , server );
-					}
-					else
-						receiving(fd);
+				// std::cout << "***********************READ HANLDER *******************************" << std::endl;
+				if (isServer(server.get_serverInfo(), i) ){
+					HandleNewConnection(i , server);
 				}
-				else if (signaledEvents[i].filter == EVFILT_WRITE)
-				{
-					// std::cout << "=============== WRITE HANDLER ==================" << std::endl;
-					sendig(fd);
+				else if ( client.isCgiRead( i ) ){
+					HandleCgiRead( i );
+				}
+				else{
+					HandleClientRead( i );
+				}
+			}
+			else if (FD_ISSET( i, &writefds )) {
+				// std::cout << "***********************WRITE HANLDER ******************************" << std::endl;
+				if (client.isCgiWrite(i)){
+					HandleCgiWrite( i );
+				}
+				else {
+					HandleClientWrite( i );
 				}
 			}
 		}
 	}
-	catch( std::exception &e)
-	{
-		close(kq);
-		std::cout << e.what() << std::endl;
-	}
 }
-
-
-const char *Multiplex::KQUEUE_EXCEPTION::what()  const _NOEXCEPT
-{
-	perror("Kequeue :");
-	return ("Faillure on creating kernel queue :") ;
-};
-
-const char *Multiplex::KEVENT_EXCEPTION::what() const _NOEXCEPT
-{
-	perror("Kevent :");
-	return ("Faillure in Kevent :") ;
-};
